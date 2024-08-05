@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Mapbox Standard</title>
+  <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div id='map'></div>
+  <script>
+    mapboxgl.accessToken = 'pk.eyJ1Ijoic2hpd29ya3MiLCJhIjoiY2szeHZjeXJsMDJzdDNsbXczdnN1b3hpNiJ9.VQg_5pGbF1qU_6FZ33Uf4g';
+
+    // Mapbox Standard
+    const map = new mapboxgl.Map({
+      container: 'map',
+      style: 'std.json',
+      center: [139.765122, 35.680812],
+      zoom: 16,
+      pitch: 56,
+      bearing: 54,
+      hash: true,
+      attributionControl: true,
+    });
+
+    // ズーム・回転
+    map.addControl(new mapboxgl.NavigationControl());
+
+    // フルスクリーンモードのオンオフ
+    map.addControl(new mapboxgl.FullscreenControl());
+
+    // 現在位置表示
+    map.addControl(new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: false
+      },
+      fitBoundsOptions: { maxZoom: 18 },
+      trackUserLocation: true,
+      showUserLocation: true
+    }));
+
+    // スケール表示
+    map.addControl(new mapboxgl.ScaleControl({
+      maxWidth: 200,
+      unit: 'metric'
+    }));
+
+    // マップをロード
+    map.on('load', () => {
+      // 建物3Dモデルソース
+      map.addSource("3dbuildings", {
+        "type": "batched-model",
+        "attribution": "<a href=\"https://www.mapbox.com/about/maps/\" target=\"_blank\" title=\"Mapbox\" aria-label=\"Mapbox\" role=\"listitem\">&copy; Mapbox</a> <a class=\"mapbox-improve-map\" href=\"https://www.mapbox.com/contribute/\" target=\"_blank\" title=\"Improve this map\" aria-label=\"Improve this map\" role=\"listitem\">Improve this map</a>",
+        "maxzoom": 14,
+        "minzoom": 14,
+        "tiles": [
+          "https://a.tiles.mapbox.com/3dtiles/v1/mapbox.mapbox-3dbuildings-v1-beta/{z}/{x}/{y}.b3dm?access_token=pk.eyJ1Ijoic2hpd29ya3MiLCJhIjoiY2szeHZjeXJsMDJzdDNsbXczdnN1b3hpNiJ9.VQg_5pGbF1qU_6FZ33Uf4g",
+          "https://b.tiles.mapbox.com/3dtiles/v1/mapbox.mapbox-3dbuildings-v1-beta/{z}/{x}/{y}.b3dm?access_token=pk.eyJ1Ijoic2hpd29ya3MiLCJhIjoiY2szeHZjeXJsMDJzdDNsbXczdnN1b3hpNiJ9.VQg_5pGbF1qU_6FZ33Uf4g"
+        ]
+      });
+
+      // 建物3Dモデルレイヤ
+      map.addLayer({
+        "id": "building-models",
+        "minzoom": 14,
+        "paint": {
+          "model-ambient-occlusion-intensity": 0.75,
+          "model-color": ["match", ["get", "part"], "roof", ["hsl", 22, 82, 90], "wall", ["hsl", 0, 0, 100], "window", ["interpolate", ["linear"], ["measure-light", "brightness"], 0, ["hsl", ["random", 0, 90, ["id"]], ["random", 20, 100, ["id"]], 87], 0.15, ["hsl", ["random", 200, 215, ["id"]], 100, ["random", 70, 80, ["id"]]]], ["interpolate", ["linear"], ["measure-light", "brightness"], 0.16, ["hsla", ["random", 10, 70, ["id"]], 55, ["random", 80, 90, ["id"]], 1], 0.4, "hsl(0, 100%, 100%)"]],
+          "model-color-mix-intensity": ["match", ["get", "part"], "logo", ["interpolate", ["linear"], ["measure-light", "brightness"], 0.2, 0, 0.4, 0.3], 1],
+          "model-emissive-strength": ["match", ["get", "part"], "door", ["interpolate", ["linear"], ["measure-light", "brightness"], 0.2, 1.5, 0.4, 2.5], "logo", 0.6, "window", ["random", 0.5, 0.8, ["id"]], 0],
+          "model-height-based-emissive-strength-multiplier": ["match", ["get", "part"], "window", ["literal", [0, 0.9, 0, 1, 0.5]], ["literal", [1, 1, 1, 1, 1]]],
+          "model-opacity": ["interpolate", ["linear"], ["zoom"], 14.2, 0, 14.5, 1],
+          "model-roughness": ["match", ["get", "part"], "window", 0, 1],
+          "model-scale": ["interpolate", ["linear"], ["zoom"], 14.2, [1, 1, 0], 14.5, [1, 1, 1]],
+          "model-type": "common-3d"
+        },
+        "source": "3dbuildings",
+        "type": "model"
+      });
+
+      // 樹木3Dモデルソース
+      map.addSource("trees", {
+        "type": "vector",
+        "maxzoom": 16,
+        "minzoom": 13,
+        "tiles": [
+          "https://a.tiles.mapbox.com/v4/mapbox.mapbox-models-v1/{z}/{x}/{y}.vector.pbf",
+          "https://b.tiles.mapbox.com/v4/mapbox.mapbox-models-v1/{z}/{x}/{y}.vector.pbf"
+        ]
+      });
+
+      map.addModel('maple1-lod1', 'mapbox://models/mapbox/maple1-lod1.glb');
+      map.addModel('maple1-lod2', 'mapbox://models/mapbox/maple1-lod2.glb');
+
+      // 樹木3Dモデルレイヤ
+      map.addLayer({
+        "id": "trees",
+        "source": "trees",
+        "source-layer": "tree",
+        "minzoom": 15,
+        "type": "model",
+        "layout": {
+          "model-id": [
+            "step", ["zoom"],
+            [
+              "match", ["get", "leaf_type"],
+              "needleleaved", ["case", ["==", ["%", ["number", ["id"]], 2], 0], "pine1-lod4", "pine2-lod4"],
+              "palm", "palm1-lod4", ["case",
+                ["==", ["%", ["number", ["id"]], 4], 0], "oak1-lod4",
+                ["==", ["%", ["number", ["id"]], 4], 1], "oak2-lod4",
+                ["==", ["%", ["number", ["id"]], 4], 2], "maple1-lod4",
+                "maple2-lod4"
+              ]
+            ],
+            15.5, ["match", ["get", "leaf_type"], "needleleaved", ["case", ["==", ["%", ["number", ["id"]], 2], 0], "pine1-lod3", "pine2-lod3"], "palm", "palm1-lod3", ["case", ["==", ["%", ["number", ["id"]], 4], 0], "oak1-lod3", ["==", ["%", ["number", ["id"]], 4], 1], "oak2-lod3", ["==", ["%", ["number", ["id"]], 4], 2], "maple1-lod3", "maple2-lod3"]],
+            16.5, ["match", ["get", "leaf_type"], "needleleaved", ["case", ["==", ["%", ["number", ["id"]], 2], 0], "pine1-lod2", "pine2-lod2"], "palm", "palm1-lod2", ["case", ["==", ["%", ["number", ["id"]], 4], 0], "oak1-lod2", ["==", ["%", ["number", ["id"]], 4], 1], "oak2-lod2", ["==", ["%", ["number", ["id"]], 4], 2], "maple1-lod2", "maple2-lod2"]],
+            17.5, ["match", ["get", "leaf_type"], "needleleaved", ["case", ["==", ["%", ["number", ["id"]], 2], 0], "pine1-lod1", "pine2-lod1"], "palm", "palm1-lod1", ["case", ["==", ["%", ["number", ["id"]], 4], 0], "oak1-lod1", ["==", ["%", ["number", ["id"]], 4], 1], "oak2-lod1", ["==", ["%", ["number", ["id"]], 4], 2], "maple1-lod1", "maple2-lod1"]]
+          ]
+        },
+        "paint": {
+          "model-color": ["hsla", ["random", 50, 200, ["id"]], 60, ["random", 70, 90, ["id"]], 1],
+          "model-color-mix-intensity": 0.21,
+          "model-opacity": ["interpolate", ["linear"], ["zoom"], 15, 0, 16, 1],
+          "model-rotation": [0, 0, ["random", 0, 360, ["id"]]],
+          "model-scale": ["match", ["%", ["number", ["id"]], 5], 0, ["literal", [0.8, 0.8, 0.8]], 1, ["literal", [0.8, 0.8, 0.8]], 2, ["literal", [0.9, 0.9, 0.9]], ["literal", [1, 1, 1]]]
+        }
+      });
+
+    })
+  </script>
+</body>
+
+</html>
